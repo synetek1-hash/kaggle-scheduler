@@ -11,16 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 6 * * *'
     steps:
+      - uses: actions/checkout@v4
       - name: Run Notebook A
         env:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
         run: |
           pip install -q kaggle
           mkdir -p /tmp/ka
-          # 노트북 다운로드
-          kaggle kernels pull synetek/notebook16f3b701ec -p /tmp/ka
-          ls /tmp/ka/
-          # 메타데이터 생성
+          cp notebook.ipynb /tmp/ka/notebook16f3b701ec.ipynb
           cat > /tmp/ka/kernel-metadata.json << 'EOF'
           {
             "id": "synetek/notebook16f3b701ec",
@@ -37,7 +35,6 @@ jobs:
             "kernel_sources": []
           }
           EOF
-          # 새 버전으로 push (= 실행 트리거)
           kaggle kernels push -p /tmp/ka
           echo "✅ Notebook A 실행 트리거 완료"
 
@@ -45,14 +42,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 18 * * *'
     steps:
+      - uses: actions/checkout@v4
       - name: Run Notebook B
         env:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
         run: |
           pip install -q kaggle
           mkdir -p /tmp/kb
-          kaggle kernels pull synetek/notebook1f8f2f726b -p /tmp/kb
-          ls /tmp/kb/
+          cp notebook.ipynb /tmp/kb/notebook1f8f2f726b.ipynb
           cat > /tmp/kb/kernel-metadata.json << 'EOF'
           {
             "id": "synetek/notebook1f8f2f726b",
