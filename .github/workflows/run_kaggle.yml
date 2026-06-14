@@ -1,0 +1,40 @@
+name: Run Kaggle Notebooks
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 매일 오전 6시 (UTC) - 한국시간 오후 3시
+    - cron: '0 18 * * *'  # 매일 오후 6시 (UTC) - 한국시간 새벽 3시
+  workflow_dispatch:  # 수동 실행도 가능
+
+jobs:
+  run-notebook-a:
+    if: github.event.schedule == '0 6 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Kaggle Notebook A
+        env:
+          KAGGLE_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+        run: |
+          pip install kaggle
+          mkdir -p ~/.kaggle
+          echo "$KAGGLE_TOKEN" > ~/.kaggle/token.json
+          kaggle kernels pull synetek/notebook16f3b701ec -p /tmp/kernel_a
+          cd /tmp/kernel_a
+          kaggle kernels push
+
+  run-notebook-b:
+    if: github.event.schedule == '0 18 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Kaggle Notebook B
+        env:
+          KAGGLE_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+        run: |
+          pip install kaggle
+          mkdir -p ~/.kaggle
+          echo "$KAGGLE_TOKEN" > ~/.kaggle/token.json
+          kaggle kernels pull synetek/notebook1f8f2f726b -p /tmp/kernel_b
+          cd /tmp/kernel_b
+          kaggle kernels push
