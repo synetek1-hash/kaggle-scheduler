@@ -5,47 +5,69 @@ on:
     - cron: '0 6 * * *'   # 매일 오전 6시 UTC (한국시간 오후 3시)
     - cron: '0 18 * * *'  # 매일 오후 6시 UTC (한국시간 새벽 3시)
   workflow_dispatch:
-    inputs:
-      notebook:
-        description: 'Which notebook to run (a or b)'
-        required: false
-        default: 'both'
 
 jobs:
   run-notebook-a:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 6 * * *'
     steps:
-      - name: Trigger Notebook A via Kaggle API
+      - name: Run Notebook A
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
         run: |
-          HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer ${{ secrets.KAGGLE_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            "https://www.kaggle.com/api/v1/kernels/${{ secrets.KAGGLE_USERNAME }}/notebook16f3b701ec/run")
-          echo "HTTP: $HTTP_CODE"
-          cat /tmp/response.txt
-          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "✅ Notebook A 실행 요청 성공"
-          else
-            echo "❌ 실패: $HTTP_CODE"
-            exit 1
-          fi
+          pip install -q kaggle
+          mkdir -p /tmp/ka
+          # 노트북 다운로드
+          kaggle kernels pull synetek/notebook16f3b701ec -p /tmp/ka
+          ls /tmp/ka/
+          # 메타데이터 생성
+          cat > /tmp/ka/kernel-metadata.json << 'EOF'
+          {
+            "id": "synetek/notebook16f3b701ec",
+            "title": "notebook16f3b701ec",
+            "code_file": "notebook16f3b701ec.ipynb",
+            "language": "python",
+            "kernel_type": "notebook",
+            "is_private": true,
+            "enable_gpu": false,
+            "enable_tpu": false,
+            "enable_internet": true,
+            "dataset_sources": [],
+            "competition_sources": [],
+            "kernel_sources": []
+          }
+          EOF
+          # 새 버전으로 push (= 실행 트리거)
+          kaggle kernels push -p /tmp/ka
+          echo "✅ Notebook A 실행 트리거 완료"
 
   run-notebook-b:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 18 * * *'
     steps:
-      - name: Trigger Notebook B via Kaggle API
+      - name: Run Notebook B
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
         run: |
-          HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer ${{ secrets.KAGGLE_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            "https://www.kaggle.com/api/v1/kernels/${{ secrets.KAGGLE_USERNAME }}/notebook1f8f2f726b/run")
-          echo "HTTP: $HTTP_CODE"
-          cat /tmp/response.txt
-          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "✅ Notebook B 실행 요청 성공"
-          else
-            echo "❌ 실패: $HTTP_CODE"
-            exit 1
-          fi
+          pip install -q kaggle
+          mkdir -p /tmp/kb
+          kaggle kernels pull synetek/notebook1f8f2f726b -p /tmp/kb
+          ls /tmp/kb/
+          cat > /tmp/kb/kernel-metadata.json << 'EOF'
+          {
+            "id": "synetek/notebook1f8f2f726b",
+            "title": "notebook1f8f2f726b",
+            "code_file": "notebook1f8f2f726b.ipynb",
+            "language": "python",
+            "kernel_type": "notebook",
+            "is_private": true,
+            "enable_gpu": false,
+            "enable_tpu": false,
+            "enable_internet": true,
+            "dataset_sources": [],
+            "competition_sources": [],
+            "kernel_sources": []
+          }
+          EOF
+          kaggle kernels push -p /tmp/kb
+          echo "✅ Notebook B 실행 트리거 완료"
